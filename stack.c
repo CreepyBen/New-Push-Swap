@@ -6,7 +6,7 @@
 /*   By: ben <ben@student.42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/11/14 01:36:45 by ben               #+#    #+#             */
-/*   Updated: 2026/11/14 01:36:46 by ben              ###   ########.fr       */
+/*   Updated: 2026/11/15 21:59:22 by ben              ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -22,11 +22,6 @@ int	stack_init(t_stack *stack, int capacity)
 	stack->capacity = capacity;
 	if (capacity == 0)
 		return (1);
-	if ((size_t)capacity > SIZE_MAX / sizeof(int))
-	{
-		stack->capacity = 0;
-		return (0);
-	}
 	stack->data = malloc(sizeof(int) * (size_t)capacity);
 	if (!stack->data)
 	{

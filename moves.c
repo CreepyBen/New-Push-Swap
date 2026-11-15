@@ -1,3 +1,15 @@
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   moves.c                                            :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: ben <ben@student.42.fr>                    +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2026/11/15 21:12:30 by ben               #+#    #+#             */
+/*   Updated: 2026/11/15 22:03:36 by ben              ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
+
 #include "push_swap.h"
 
 static void	set_rotation(t_move *move, int index, int size, int is_a)
@@ -106,7 +118,7 @@ t_move	select_cheapest_move(const t_push_swap *ps, t_transfer direction)
 		size = ps->b.size;
 	best = calculate_move(ps, direction, 0);
 	i = 1;
-	while (i < size)
+	while (i < size && best.cost > 0)
 	{
 		candidate = calculate_move(ps, direction, i);
 		if (candidate.cost < best.cost)

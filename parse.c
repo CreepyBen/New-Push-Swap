@@ -1,87 +1,68 @@
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   parse.c                                            :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: ben <ben@student.42.fr>                    +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2026/11/15 21:12:37 by ben               #+#    #+#             */
+/*   Updated: 2026/11/15 22:03:10 by ben              ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
+
 #include "push_swap.h"
 
-static int	read_int(const char **s, int *out)
+static int	str_eq(const char *a, const char *b)
 {
-	long	v;
-	int		neg;
-
-	while (**s == ' ')
-		(*s)++;
-	if (!**s)
-		return (-1);
-	neg = (**s == '-');
-	if (**s == '-' || **s == '+')
-		(*s)++;
-	if (**s < '0' || **s > '9')
-		return (0);
-	v = 0;
-	while (**s >= '0' && **s <= '9' && v <= INT32_MAX + 1L)
+	while (*a && *a == *b)
 	{
-		v = v * 10 + (**s - '0');
-		(*s)++;
+		a++;
+		b++;
 	}
-	if (neg)
-		v = -v;
-	if ((**s && **s != ' ') || v < INT32_MIN || v > INT32_MAX)
+	return (*a == *b);
+}
+
+static int	parse_int(const char *s, int *out)
+{
+	long	n;
+	int		sign;
+
+	sign = 1 - 2 * (*s == '-');
+	if (*s == '-' || *s == '+')
+		s++;
+	if (*s < '0' || *s > '9')
 		return (0);
-	*out = (int)v;
+	n = 0;
+	while (*s >= '0' && *s <= '9')
+	{
+		n = n * 10 + (*s++ - '0');
+		if (n > 2147483648L)
+			return (0);
+	}
+	n *= sign;
+	if (*s != '\0' || n > INT32_MAX || n < INT32_MIN)
+		return (0);
+	*out = (int)n;
 	return (1);
 }
 
-static int	parse_flag(t_push_swap *ps, const char *arg)
+static int	parse_option(t_push_swap *ps, const char *arg)
 {
-	const char	*name;
-	int			idx;
-	int			i;
-
-	name = "--adaptive\0--simple\0--medium\0--complex\0--bench";
-	idx = 0;
-	while (idx < 5)
-	{
-		i = 0;
-		while (name[i] && name[i] == arg[i])
-			i++;
-		if (!name[i] && !arg[i])
-			break ;
-		while (*name)
-			name++;
-		name++;
-		idx++;
-	}
-	if (idx == 4)
+	if (arg[0] != '-' || arg[1] != '-')
+		return (0);
+	if (str_eq(arg, "--bench") && !ps->bench)
 		ps->bench = 1;
-	else if (idx < 4)
-		ps->strategy = (t_strat)idx;
-	return (idx < 5);
-}
-
-static int	scan_args(int argc, char **argv, int *values)
-{
-	int			i;
-	int			n;
-	int			rc;
-	int			tmp;
-	const char	*s;
-
-	i = 0;
-	n = 0;
-	while (i < argc)
-	{
-		s = argv[i++];
-		rc = read_int(&s, &tmp);
-		if (rc < 1)
-			return (-1);
-		while (rc == 1)
-		{
-			if (values)
-				values[n] = tmp;
-			n++;
-			rc = read_int(&s, &tmp);
-		}
-		if (rc == 0)
-			return (-1);
-	}
-	return (n);
+	else if (str_eq(arg, "--simple"))
+		ps->strategy = STRAT_SIMPLE;
+	else if (str_eq(arg, "--medium"))
+		ps->strategy = STRAT_MEDIUM;
+	else if (str_eq(arg, "--complex"))
+		ps->strategy = STRAT_COMPLEX;
+	else if (str_eq(arg, "--adaptive"))
+		ps->strategy = STRAT_ADAPTIVE;
+	else
+		return (-1);
+	return (1 + !str_eq(arg, "--bench"));
 }
 
 int	validate_values(const int *values, int count)
@@ -107,21 +88,21 @@ int	validate_values(const int *values, int count)
 int	parse_args(t_push_swap *ps, int argc, char **argv)
 {
 	int	i;
-	int	count;
+	int	opt;
+	int	strat;
 
+	if (!stack_init(&ps->a, argc) || !stack_init(&ps->b, argc))
+		return (0);
+	strat = 0;
 	i = 1;
-	while (i < argc && argv[i][0] == '-' && argv[i][1] == '-')
+	while (i < argc)
 	{
-		if (!parse_flag(ps, argv[i]))
+		opt = parse_option(ps, argv[i]);
+		if (opt < 0 || (opt == 2 && strat++))
+			return (0);
+		if (opt == 0 && !parse_int(argv[i], &ps->a.data[ps->a.size++]))
 			return (0);
 		i++;
 	}
-	count = scan_args(argc - i, argv + i, NULL);
-	if (count < 0 || !stack_init(&ps->a, count))
-		return (0);
-	if (!stack_init(&ps->b, count))
-		return (0);
-	scan_args(argc - i, argv + i, ps->a.data);
-	ps->a.size = count;
-	return (validate_values(ps->a.data, count));
+	return (validate_values(ps->a.data, ps->a.size));
 }

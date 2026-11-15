@@ -1,53 +1,72 @@
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   main.c                                             :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: ben <ben@student.42.fr>                    +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2026/11/15 21:12:26 by ben               #+#    #+#             */
+/*   Updated: 2026/11/15 21:19:17 by ben              ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
 
 #include "push_swap.h"
 
 static void	init_ps(t_push_swap *ps)
 {
-	unsigned char	*bytes;
-	size_t			i;
-
-	bytes = (unsigned char *)ps;
-	i = 0;
-	while (i < sizeof(*ps))
-	{
-		bytes[i] = 0;
-		i++;
-	}
+	stack_init(&ps->a, 0);
+	stack_init(&ps->b, 0);
+	ps->ops = NULL;
+	ps->op_count = 0;
+	ps->op_capacity = 0;
+	ps->strategy = STRAT_ADAPTIVE;
+	ps->selected_strategy = STRAT_ADAPTIVE;
+	ps->disorder = 0.0;
+	ps->bench = 0;
+	ps->error = 0;
 }
 
-static int	fail(t_push_swap *ps)
+static int	merge_ops(int top, int op)
 {
-	ps_destroy(ps);
-	write(2, "Error\n", 6);
-	return (1);
-}
-
-void	emit_operations(const t_push_swap *ps)
-{
-	const char	*name;
+	const char	*rules;
 	int			i;
-	int			skip;
-	int			len;
 
+	rules = "aazbbzcczdezedzfizifzgjzjgzhkzkhz"
+		"abcbacfghgfhijkjikhighjfkfjkgi";
+	i = 0;
+	while (rules[i])
+	{
+		if (rules[i] - 'a' == top && rules[i + 1] - 'a' == op)
+			return (rules[i + 2] - 'a');
+		i += 3;
+	}
+	return (-1);
+}
+
+static void	simplify_ops(t_push_swap *ps)
+{
+	int	n;
+	int	i;
+	int	res;
+	int	op;
+
+	n = 0;
 	i = 0;
 	while (i < ps->op_count)
 	{
-		name = "sa\0sb\0ss\0pa\0pb\0ra\0rb\0rr\0rra\0rrb\0rrr";
-		skip = ps->ops[i];
-		while (skip > 0)
+		op = ps->ops[i++];
+		while (n > 0 && op < OP_COUNT)
 		{
-			while (*name)
-				name++;
-			name++;
-			skip--;
+			res = merge_ops(ps->ops[n - 1], op);
+			if (res < 0)
+				break ;
+			n--;
+			op = res;
 		}
-		len = 0;
-		while (name[len])
-			len++;
-		write(1, name, len);
-		write(1, "\n", 1);
-		i++;
+		if (op < OP_COUNT)
+			ps->ops[n++] = op;
 	}
+	ps->op_count = n;
 }
 
 void	run_strategy(t_push_swap *ps)
@@ -55,7 +74,10 @@ void	run_strategy(t_push_swap *ps)
 	ps->selected_strategy = ps->strategy;
 	if (ps->strategy == STRAT_ADAPTIVE)
 		ps->selected_strategy = STRAT_SIMPLE;
-	if (ps->a.size < 2 || stack_is_sorted(&ps->a))
+	if (ps->a.size < 2)
+		return ;
+	ps->disorder = compute_disorder(&ps->a);
+	if (stack_is_sorted(&ps->a))
 		return ;
 	if (!rank_values(&ps->a))
 	{
@@ -76,17 +98,23 @@ int	main(int argc, char **argv)
 {
 	t_push_swap	ps;
 
-	if (argc < 2)
-		return (0);
 	init_ps(&ps);
 	if (!parse_args(&ps, argc, argv))
-		return (fail(&ps));
-	ps.disorder = compute_disorder(&ps.a);
+	{
+		ps_destroy(&ps);
+		write(2, "Error\n", 6);
+		return (1);
+	}
 	run_strategy(&ps);
 	if (ps.error)
-		return (fail(&ps));
+	{
+		ps_destroy(&ps);
+		write(2, "Error\n", 6);
+		return (1);
+	}
+	simplify_ops(&ps);
 	emit_operations(&ps);
-	if (ps.bench && ps.a.size > 0)
+	if (ps.bench)
 		print_benchmark(&ps);
 	ps_destroy(&ps);
 	return (0);
