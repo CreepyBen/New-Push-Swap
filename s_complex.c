@@ -6,7 +6,7 @@
 /*   By: ben <ben@student.42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/11/15 21:12:46 by ben               #+#    #+#             */
-/*   Updated: 2026/11/15 22:03:50 by ben              ###   ########.fr       */
+/*   Updated: 2026/11/16 01:05:03 by ben              ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -60,11 +60,6 @@ void	s_complex(t_push_swap *ps)
 
 	if (!ps || ps->a.size < 2 || ps->error)
 		return ;
-	if (!rank_values(&ps->a))
-	{
-		ps->error = 1;
-		return ;
-	}
 	size = ps->a.size;
 	max_bits = get_max_bits(size);
 	bit = 0;
